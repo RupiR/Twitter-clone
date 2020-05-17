@@ -30,7 +30,10 @@ form.addEventListener('submit', (event) => {
     }).then(response => response.json())
         .then(createdWoof => {
             form.reset();
-            form.style.display = '';
+            setTimeout(() => {
+                form.style.display = '';
+            }, 30000);
+
             listAllWoof();
         })
 });

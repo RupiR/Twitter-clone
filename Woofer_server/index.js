@@ -1,11 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const monk = require('monk');
+const Filter = require('bad-words');
+const rateLimit = require('express-rate-limit');
+
 
 const app = express();
 
 const db = monk('localhost/woofer');
 const woof = db.get('woof');
+const filter = new Filter();
 
 app.use(cors());
 app.use(express.json());
@@ -16,17 +20,30 @@ app.get('/', (req, res) => {
     });
 });
 
+app.get('/woof', (req, res) => {
+    woof
+        .find()
+        .then(woof => {
+            res.json(woof);
+        })
+});
+
 function isValidWoof(woof) {
     return woof.name && woof.name.toString().trim() !== '' &&
         woof.content && woof.content.toString().trim() !== '';
 }
 
+app.use(rateLimit({
+    windowMs: 30 * 1000, //30 SECONDS
+    max: 1 // limit each IP to 1 request per windowMs
+}));
+
 app.post('/woof', (req, res) => {
     if (isValidWoof(req.body)) {
         // insert into db... 
         const woof = {
-            name: req.body.name.toString(),
-            content: req.body.content.toString(),
+            name: filter.clean(req.body.name.toString()),
+            content: filter.clean(req.body.content.toString()),
             created: new Date(),
         };
 
